@@ -1,6 +1,5 @@
 create database comparaciones;
 
-
 use comparaciones;
 
 
@@ -51,14 +50,14 @@ set nocount on
 				declare @nombre_campoBdd1 nvarchar(max)
 				declare @nombre_campoBdd2 nvarchar(max)
 
-				set @nombre_campoBdd1='select name as nombre_tablas_queNoEstanEnLaBdd2
+				set @nombre_campoBdd1='select name as tablas_bdd1_queNoEstanEnLa2
 								   from '+@bdd1+'.sys.tables
 								   where '+@bdd1+'.sys.tables.name not in (select name
 																			from '+@bdd2+'.sys.tables);';
 
 
 				
-				set @nombre_campoBdd2='select name as nombre_tablas_queNoEstanEnLaBdd2
+				set @nombre_campoBdd2='select name as tablas_bdd2_queNoEstanEnLa1
 								   from '+@bdd2+'.sys.tables
 								   where '+@bdd2+'.sys.tables.name not in (select name
 																			from '+@bdd1+'.sys.tables);';
@@ -156,4 +155,25 @@ select name as nombre_tablas_queNoEstanEnLaBdd2
 								   from comparar1.sys.tables
 								   where comparar1.sys.tables.name not in (select name
 																			from comparar2.sys.tables);
+
+
+
+--busco el nombre de una tabla 
+
+select *
+from comparar1.sys.tables as t 
+where t.name in('t2','t4');
+
+
+--busco el nombre de las tablas que pertenecen al mismo esquema
+select t.name
+from comparar1.sys.tables as t inner join comparar1.sys.schemas as s on t.schema_id=s.schema_id
+where  s.schema_id=5;
+
+
+
+
+
+
+
 

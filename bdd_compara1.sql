@@ -1,4 +1,4 @@
-
+drop database comparar1
 create database comparar1;
 use comparar1;
 
@@ -21,14 +21,20 @@ constraint pk_idb primary key (id)
 );
 
 
---cambio el bmbre de t3 por t4 para validar los nombres de tabla que trae
-create table com1.t4
+create table com1.t3
 (
 id int not null,
 nombre varchar(20)
 constraint pk_idc primary key (id)
 );
 
+--agrego una tabla de mas para comprobar validacion por nombre de tabla
+create table com1.t4
+(
+id int not null,
+nombre varchar(20)
+constraint pk_idd primary key (id)
+);
 
 
 
