@@ -20,7 +20,9 @@ nombre2 varchar(10)
 constraint pk_idb primary key (id)
 );
 
-create table com1.t3
+
+--cambio el bmbre de t3 por t4 para validar los nombres de tabla que trae
+create table com1.t4
 (
 id int not null,
 nombre varchar(20)

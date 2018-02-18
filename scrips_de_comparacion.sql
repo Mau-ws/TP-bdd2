@@ -21,14 +21,13 @@ set nocount on
 
 			
 			--bloque que compara el nombre de los esquemas
-			begin				
+			begin		
 				declare @esquema_bdd1 nvarchar(max);
 				--lo siguiente es sql dinamico
 				set @esquema_bdd1='select name as esquema_bdd1_queNoEstaEnLa2
 								   from '+@bdd1+'.sys.schemas
 								   where '+@bdd1+'.sys.schemas.name not in (select name
 																			from '+@bdd2+'.sys.schemas);';
-
 
 			
 				declare @esquema_bdd2 nvarchar(max);
@@ -38,13 +37,36 @@ set nocount on
 																				from '+@bdd1+'.sys.schemas);';
 					
 
-
 				--ejecuto los declare de arriba para que muestren el resultado de la comparacion
 				EXECUTE SP_EXECUTESQL @esquema_bdd1;
 				EXECUTE SP_EXECUTESQL @esquema_bdd2;
 				
 			
-			end
+			end 
+			
+
+			--transaccion para comparar tablas por nombre
+			begin 
+
+				declare @nombre_campoBdd1 nvarchar(max)
+				declare @nombre_campoBdd2 nvarchar(max)
+
+				set @nombre_campoBdd1='select name as nombre_tablas_queNoEstanEnLaBdd2
+								   from '+@bdd1+'.sys.tables
+								   where '+@bdd1+'.sys.tables.name not in (select name
+																			from '+@bdd2+'.sys.tables);';
+
+
+				
+				set @nombre_campoBdd2='select name as nombre_tablas_queNoEstanEnLaBdd2
+								   from '+@bdd2+'.sys.tables
+								   where '+@bdd2+'.sys.tables.name not in (select name
+																			from '+@bdd1+'.sys.tables);';
+
+			EXECUTE SP_EXECUTESQL @nombre_campoBdd1;
+			EXECUTE SP_EXECUTESQL @nombre_campoBdd2;
+			end 
+
 	end try
 
 
@@ -126,5 +148,12 @@ from comparar2.sys.schemas
 
 
 
+---comparar campos:
 
+
+
+select name as nombre_tablas_queNoEstanEnLaBdd2
+								   from comparar1.sys.tables
+								   where comparar1.sys.tables.name not in (select name
+																			from comparar2.sys.tables);
 
