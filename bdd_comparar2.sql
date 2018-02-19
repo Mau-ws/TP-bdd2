@@ -6,6 +6,10 @@ go
 create schema com2;
 go
 
+go 
+create schema com33
+go
+
 create table com2.t1
 (
 id int not null,
