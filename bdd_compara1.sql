@@ -1,3 +1,4 @@
+use master
 drop database comparar1
 create database comparar1;
 use comparar1;
@@ -8,9 +9,9 @@ go
 
 create table com1.t1
 (
-id int not null,
-nombre varchar(20)
-constraint pk_id primary key (id)
+ids int not null,
+nombres varchar(20)
+constraint pk_id primary key (ids)
 );
 
 create table com1.t2

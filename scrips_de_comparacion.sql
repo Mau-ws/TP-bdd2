@@ -42,6 +42,17 @@ create table Esquemas_bdd2
 );
 
 
+create table tablas_en_comun
+(
+	id int primary key,
+	nombre_tablas nvarchar(max)
+);
+
+
+create table cant_columnas
+(
+	columnas_iguales nvarchar(max),
+)
 
 
 
@@ -190,6 +201,46 @@ set nocount on
 				commit tran
 			end
 			------------------------------------------------------------------------------------
+
+			--transaccion para traer las tablas que estan en ambas bdd
+			begin
+				begin tran
+					
+					declare @tablas_mismo_nombre nvarchar(max)
+	
+					set @tablas_mismo_nombre ='select name
+												from '+@bdd1+'.sys.tables
+												where '+@bdd1+'.sys.tables.name in(select name
+																					from '+@bdd2+'.sys.tables)'
+
+
+					insert into tablas_en_comun(nombre_tablas)
+					exec sp_executesql @tablas_mismo_nombre;
+
+				commit tran
+			end
+			------------------------------------------------------------------------------------
+
+
+			
+			--transaccion para traer las tablas que estan en ambas bdd
+			begin
+				begin tran
+					
+					declare @cant_columnas nvarchar(max)
+	
+					set @tablas_mismo_nombre ='select name
+												from '+@bdd1+'.sys.tables
+												where '+@bdd1+'.sys.tables.name in(select name
+																					from '+@bdd2+'.sys.tables)'
+
+
+					insert into tablas_en_comun(nombre_tablas)
+					exec sp_executesql @tablas_mismo_nombre;
+
+				commit tran
+			end
+			------------------------------------------------------------------------------------
 		ENd
 	end try
 
@@ -237,9 +288,21 @@ select * from cant_tablas
 
 
 select * from tablas_bdd1
-select * from tablas_bdd2
+
+select case when len(t.tablas_que_soloEstaEnBDD2)>0 then t.tablas_que_soloEstaEnBDD2
+			when len(t.tablas_que_soloEstaEnBDD2) is null then 'sin datos' end  from tablas_bdd2 t
 
 
+select * 
+from tablas_en_comun
+
+
+
+--numero de columnas de una tabla
+
+SELECT count(*) as cantidad_de_columnas
+FROM information_schema.columns t
+WHERE t.table_name='com.t1'
 
 
 
@@ -259,13 +322,52 @@ select DB_ID('comparar1');
 
 
 
- 
+ */
  --devuelve el nombre de la columna de una tabla
-select COL_NAME(object_id('com2.a'),1)
+ /*
+select COL_NAME(object_id('cant_tablas'),1)
+
+
+*/
+/*
+
+SELECT count(*) as cantidad_de_columnas
+FROM information_schema.columns
+WHERE table_name = 'cant_tablas'
+*/
 
 
 
 
+
+--mostrar nombre de tablas que estan en ambas bdd
+select t.TABLE_NAME as tablas_en_ambas_bdd,COLUMN_NAME as columnas_iguales
+from comparar1.INFORMATION_SCHEMA.columns t
+where t.TABLE_NAME in (select i.TABLE_NAME
+						from comparar2.INFORMATION_SCHEMA.COLUMNS i)and t.COLUMN_NAME in(select c.COLUMN_NAME
+																						from comparar2.INFORMATION_SCHEMA.COLUMNS c)
+order by t.TABLE_NAME
+
+
+
+
+
+
+--mostrar cantidad de tablas
+
+select t.TABLE_NAME as tablas_mismo_nombre,count(COLUMN_NAME) as cant_columnas_iguales
+from comparar1.INFORMATION_SCHEMA.columns t
+where t.TABLE_NAME in (select i.TABLE_NAME
+						from comparar2.INFORMATION_SCHEMA.COLUMNS i)and t.COLUMN_NAME in(select c.COLUMN_NAME
+																						from comparar2.INFORMATION_SCHEMA.COLUMNS c)
+group by TABLE_NAME
+
+
+
+
+
+
+/*
 --traigo los esquemas de una bdd que no se encuentra en la otra		
 
 select name 
@@ -396,3 +498,10 @@ SELECT Id, Descripcion, Abreviatura, Comentarios FROM @Catalogos
 
 
 					select * from Esquemas*/
+
+
+
+
+
+
+
