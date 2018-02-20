@@ -38,6 +38,12 @@ constraint pk_idd primary key (id)
 
 
 
+create table com1.t5
+(
+id int not null,
+nombre varchar(20)
+constraint pk_ide primary key (id)
+);
 
 
 

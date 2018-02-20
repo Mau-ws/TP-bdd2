@@ -18,12 +18,27 @@ create table cant_tablas
 	cant_tablas_bdd2 nvarchar(max)
 );
 
-create table Esquemas
+create table tablas_bdd1
 (
-	esquema_que_soloEstaEnBDD1 nvarchar(max),
+	tablas_que_soloEstaEnBDD1 nvarchar(max),
 	
+);
+
+create table tablas_bdd2
+(
+	tablas_que_soloEstaEnBDD2 nvarchar(max),
+);
+
+
+
+create table Esquemas_bdd1
+(
+	esquema_que_soloEstaEnBDD1 nvarchar(max),	
+);
+
+create table Esquemas_bdd2
+(
 	esquema_que_soloEstaEnBDD2 nvarchar(max)
-	
 );
 
 
@@ -38,73 +53,58 @@ as
 BEGIN
 set nocount on
 	begin try
-		--veo si existen las bdd, y mansa un mensaje dependiendo cual no esta
+
+		--veo si existen las bdd, y manda un mensaje dependiendo cual no esta
 		if db_id(@bdd1) is null and  db_id(@bdd2) is not null raiserror('NO SE ENCUENTRA LA BDD1',16,1)	
 		if db_id(@bdd2) is null and  db_id(@bdd1) is not null raiserror('NO SE ENCUENTRA LA BDD2',16,1)
 		if db_id(@bdd2) is  null and  db_id(@bdd1) is  null raiserror('NO SE ENCUENTRAN NINGUNA BDD',16,1)
 
 			
-			BEGIN
+		BEGIn
 			---------------------------------------------------------------
 			--bloque que compara el nombre de los esquemas
 			begin	
 				begin tran
 
-					--variables que guardan el resultado de lo que trae el @sqlDinamico
-					declare @esquema_bdd1 nvarchar(max)
-					
-					declare @esquema_bdd2 nvarchar(max)
-					
-
-
+				
 					--creo una variable para guardar la consulta como un texto
-					declare @sqlDinamico nvarchar(max)
+					declare @query_esquemas nvarchar(max)
 					
-					declare @sqlDinamico2 nvarchar(max)
+					declare @query_esquemas2 nvarchar(max)
 				
 					
 					/*cuando se ejecuta con el sp_executesql, el auxiliar pasa a tener el dato de la consulta
 					aca ocurre la magia negra*/
-					set @sqlDinamico='select @auxiliar1= name 
+					set @query_esquemas='select name 
 										 from '+@bdd1+'.sys.schemas
 										 where '+@bdd1+'.sys.schemas.name not in (select name
-																					from '+@bdd2+'.sys.schemas);'
+																					from '+@bdd2+'.sys.schemas)';
 
 
 
-					set @sqlDinamico2='select @auxiliar2= name 
+					set @query_esquemas2='select name 
 										 from '+@bdd2+'.sys.schemas
 										 where '+@bdd2+'.sys.schemas.name not in (select name
-																					from '+@bdd1+'.sys.schemas);'
-
-				
+																					from '+@bdd1+'.sys.schemas)';
 
 
-					
 
-				--paso a aclarar:
-				/* al ejecutar el @sqlDinamico con el 'sp_executesql', lo que hace es transformar lo que está en string
-				enm formato codigo, quedaria como una cosulta comun, el @auxiliar, es una variable la cual mantiene 
-				el resultado de la consulta, con el output, mantengo el resultado, y lo puedo igualar a otra 
-				variable para poder setearlo luego
+				/*valido que los que traiga la consulta no se a null, solo asi se guarda en la tabla
 				*/
+					if (@query_esquemas is not null)
+					insert into Esquemas_bdd1(esquema_que_soloEstaEnBDD1)
+					execute sp_executesql @query_esquemas
 
-					execute sp_executesql @sqlDinamico ,N'@auxiliar1 nvarchar(max) OUTPUT',@auxiliar1=@esquema_bdd1 output
 
-
-				    execute sp_executesql @sqlDinamico2 ,N'@auxiliar2 nvarchar(max) OUTPUT',@auxiliar2=@esquema_bdd2 output;
+					if(@query_esquemas2 is not null)
+					insert into Esquemas_bdd2(esquema_que_soloEstaEnBDD2)
+					execute sp_executesql @query_esquemas2
 				
-				
-
-				--inserto los datos.
-				--el problemas es que solo trae un registro
-				--en comparar2, hay 2 esquemas, pero solo trae uno 
-				insert into Esquemas(esquema_que_soloEstaEnBDD1,esquema_que_soloEstaEnBDD2)
-				select @esquema_bdd1,@esquema_bdd2
 				
 				commit tran
 			end 
 			------------------------------------------------------------------
+
 
 
 			--transaccion para comparar tablas por nombre
@@ -114,14 +114,14 @@ set nocount on
 				declare @nombre_tablaBdd1 nvarchar(max)
 				declare @nombre_tablaBdd2 nvarchar(max)
 
-				set @nombre_tablaBdd1='select name as tablas_bdd1_queNoEstanEnLa2
+				set @nombre_tablaBdd1='select name 
 								   from '+@bdd1+'.sys.tables
 								   where '+@bdd1+'.sys.tables.name not in (select name
 																			from '+@bdd2+'.sys.tables);';
 
 
 				
-				set @nombre_tablaBdd2='select name as tablas_bdd2_queNoEstanEnLa1
+				set @nombre_tablaBdd2='select name 
 								   from '+@bdd2+'.sys.tables
 								   where '+@bdd2+'.sys.tables.name not in (select name
 																			from '+@bdd1+'.sys.tables);';
@@ -131,17 +131,23 @@ set nocount on
 
 
 				if(@nombre_tablaBdd1 is not null)
-				begin
+				insert into tablas_bdd1(tablas_que_soloEstaEnBDD1)
 				EXECUTE SP_EXECUTESQL @nombre_tablaBdd1;
-				end
+				
+				
 
-				if(len(@nombre_tablaBdd2)>0)
+
+				if(@nombre_tablaBdd2 is not null)
+				insert into tablas_bdd2(tablas_que_soloEstaEnBDD2)
 				EXECUTE SP_EXECUTESQL @nombre_tablaBdd2;
-			
+				
+				
 				commit tran
+				
 			end
 			------------------------------------------------------------------------
 			
+
 			--transaccion para comparar cantidad de tablas
 			begin
 				begin tran
@@ -149,30 +155,42 @@ set nocount on
 					declare @cant_tablas_bdd1 nvarchar(max)
 					declare @cant_tablas_bdd2 nvarchar(max)
 
-					set @cant_tablas_bdd1='select count(object_id) as cant_tablas
+
+
+
+					declare @sqlDinamico_cant_tablas nvarchar(max)
+					declare @sqlDinamico_cant_tablas2 nvarchar(max)
+				
+
+					set @cant_tablas_bdd1='select @aux_cant_tablas=count(object_id) 
 											from '+@bdd1+'.sys.tables'
 
 					
 
-
-					set @cant_tablas_bdd2='select count(object_id) as cant_tablas
+					
+					set @cant_tablas_bdd2='select @aux_cant_tablas2=count(object_id) 
 											from '+@bdd2+'.sys.tables'
 
 
+					
+					/* forma de meter varias columnas en una tabla, el problema es que no soporta varias finasl, 
+					por eso no inclui éste método en las consultas de arriba, ya que las demas traian mas de una fila */
+					
+					exec sp_executesql @cant_tablas_bdd1,N'@aux_cant_tablas nvarchar(max) OUTPUT',@aux_cant_tablas=@cant_tablas_bdd1 output;
+					
+					exec sp_executesql @cant_tablas_bdd2,N'@aux_cant_tablas2 nvarchar(max) OUTPUT',@aux_cant_tablas2=@cant_tablas_bdd2 output;
+					
 
+					
 					insert into cant_tablas(cant_tablas_bdd1,cant_tablas_bdd2) values
 					(@cant_tablas_bdd1,@cant_tablas_bdd2);
-
-
-
-					exec sp_executesql @cant_tablas_bdd1;
 
 
 
 				commit tran
 			end
 			------------------------------------------------------------------------------------
-		END
+		ENd
 	end try
 
 
@@ -211,7 +229,17 @@ exec ComprobarQueExistanBDD 'comparar1','comparar2';
 
 
 
-select * from Esquemas
+select * from Esquemas_bdd1
+
+select * from Esquemas_bdd2
+
+select * from cant_tablas
+
+
+select * from tablas_bdd1
+select * from tablas_bdd2
+
+
 
 
 
@@ -319,3 +347,52 @@ insert into Esquemas_bdd2(esquema_que_soloEstaEnBDD2)
 select * from @variable
 */
 -------------------------------------------
+
+
+
+
+/************************************************************************/
+/*
+DECLARE @Catalogos TABLE
+(
+	Id INT,
+	Descripcion NVARCHAR(100), 
+	Abreviatura NVARCHAR(20), 
+	Comentarios NVARCHAR(200)
+)
+
+SET @Query = ' SELECT ' + @Campo + ', Descripcion, Abreviatura, Comentarios '
+SET @Query = @Query + ' FROM ' + @Tabla + ' WHERE Descripcion LIKE ''%' + @Filtro + '%''' 
+INSERT INTO @Catalogos
+EXECUTE SP_EXECUTESQL @Query
+
+SELECT Id, Descripcion, Abreviatura, Comentarios FROM @Catalogos
+
+-------------------------------------------------------------------------
+			
+
+					declare @bdd5 varchar(max)='comparar1'
+					declare @bdd6 varchar(max)='comparar2'
+
+
+					--creo una variable para guardar la consulta como un texto
+					declare @query nvarchar(max)
+				
+					
+					/*cuando se ejecuta con el sp_executesql, el auxiliar pasa a tener el dato de la consulta
+					aca ocurre la magia negra*/
+					set @query='select  name 
+										 from '+@bdd6+'.sys.schemas
+										 where '+@bdd6+'.sys.schemas.name not in (select name
+																					from '+@bdd5+'.sys.schemas);'
+
+
+
+					if(@query is not null)					
+					insert into Esquemas(esquema_que_soloEstaEnBDD2)
+					exec sp_executesql @query
+
+
+
+
+					select * from Esquemas*/
