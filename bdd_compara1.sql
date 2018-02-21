@@ -34,8 +34,10 @@ constraint pk_idc primary key (id)
 create table com1.t4
 (
 id int not null,
-nombre varchar(20)
-constraint pk_idd primary key (id)
+nombre varchar(20),
+id_t1 int,
+constraint pk_idd primary key (id),
+constraint fk_id_t1 foreign key (id_t1) references com1.t1(ids)
 );
 
 
@@ -43,7 +45,8 @@ constraint pk_idd primary key (id)
 create table com1.t5
 (
 id int not null,
-nombre varchar(20)
+nombre varchar(20),
+carrera varchar (30) default 'ninguna',
 constraint pk_ide primary key (id)
 );
 
