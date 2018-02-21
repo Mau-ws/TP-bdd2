@@ -60,7 +60,15 @@ create table mismo_nombre_Tablas
 
 
 
-
+create table datos_de_tablas_con_mismo_nombre
+(
+	nombre_bdd nvarchar(max),
+	nombre_tablas_en_comun nvarchar(max),
+	nombre_columnas nvarchar(max),
+	tipo_dato nvarchar(max),
+	permite_null nvarchar(max),
+	posicion_en_tabla int
+)
 
 
 
@@ -212,29 +220,70 @@ set nocount on
 			end
 				/************************************************************************************************/
 
-				--llenar mismasColumnas_mismasTablas
-			begin
-				begin tran
+						--llenar mismo_nombre_Tablas
+					begin
+						begin tran
 					
-					declare @queryDinamico nvarchar(max)
+							declare @queryDinamico nvarchar(max)
 	
-					set @queryDinamico ='select t.TABLE_NAME 
-										from '+@bdd1+'.INFORMATION_SCHEMA.columns t
-										where t.TABLE_NAME in (select i.TABLE_NAME
-																from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS i)
-															group by TABLE_NAME'
+							set @queryDinamico ='select t.TABLE_NAME 
+												from '+@bdd1+'.INFORMATION_SCHEMA.columns t
+												where t.TABLE_NAME in (select i.TABLE_NAME
+																		from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS i)
+																	group by TABLE_NAME'
 
 
-					insert into mismo_nombre_Tablas(nombre)
-					exec sp_executesql @queryDinamico;
+							insert into mismo_nombre_Tablas(nombre)
+							exec sp_executesql @queryDinamico;
 
-				commit tran
-			end
-	
-
+						commit tran
+					end
 
 
 	/************************************************************************************************/
+
+
+				--rellenar datos_de_tablas_con_mismo_nombre
+				begin
+						begin tran
+					
+							declare @datos_tablas_mismo_nombre nvarchar(max)
+	
+							set @datos_tablas_mismo_nombre ='select a.table_catalog ,
+																		a.TABLE_NAME ,
+																		a.COLUMN_NAME ,
+																		a.DATA_TYPE ,
+																		a.IS_NULLABLE ,
+																		a.ORDINAL_POSITION 
+																from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS a
+																where a.TABLE_NAME in (select TABLE_NAME
+																						from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS)
+						
+																union all
+																select a.table_catalog,
+																		a.TABLE_NAME ,
+																		a.COLUMN_NAME, 
+																		a.DATA_TYPE,
+																		a.IS_NULLABLE, 
+																		a.ORDINAL_POSITION 
+																from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS a
+																where a.TABLE_NAME in (select TABLE_NAME
+																						from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS)
+																						order by TABLE_NAME
+'
+
+
+							insert into datos_de_tablas_con_mismo_nombre(nombre_bdd,nombre_tablas_en_comun,nombre_columnas,tipo_dato,permite_null,posicion_en_tabla)
+							exec sp_executesql @datos_tablas_mismo_nombre;
+
+						commit tran
+					end
+
+
+	/************************************************************************************************/
+
+
+
 
 
 
@@ -293,10 +342,14 @@ select * from tablas_bdd2
 select nombre as tablas_con_mismo_nombre_en_ambas_bdd from mismo_nombre_Tablas
 
 
+select * 
+from datos_de_tablas_con_mismo_nombre
 
 
 
 
+
+/*
 select a.table_catalog as nombre_de_bdd,
 		a.TABLE_NAME as nombre_tablas_en_comun,
 		a.COLUMN_NAME as nombre_columna,
@@ -322,9 +375,11 @@ where a.TABLE_NAME in (select TABLE_NAME
 
 
 
+*/
 
 
 
+/*
 
 --tipo de datos,de las columnas en tablas de mismo nombre
 select a.table_catalog as nombre_de_bdd,a.TABLE_NAME,a.COLUMN_NAME,a.DATA_TYPE
@@ -333,6 +388,12 @@ from comparar1.INFORMATION_SCHEMA.COLUMNS a
 
 select *
 from comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+
+
+*/
+
+
+
 
 
 /*
