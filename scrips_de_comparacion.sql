@@ -11,46 +11,60 @@ use comparaciones;
 /**********************************************************************************/
 --creacion de tablas para guardar la informacion de la comparacion
 
-create table cant_tablas
+
+--nombre de esquemas de la bdd1
+create table Esquemas_bdd1
 (
-	cant_tablas_bdd1 nvarchar(max),
-	cant_tablas_bdd2 nvarchar(max)
+	esquema_que_soloEstaEnBDD1 nvarchar(max) default 'sin datos',	
 );
 
+--nombre de esquemas de la bdd2
+create table Esquemas_bdd2
+(
+	esquema_que_soloEstaEnBDD2 nvarchar(max)default 'sin datos'
+);
+
+
+
+
+--cantidad de tablas de ambas bdd, sin contar  las del sistema
+create table cant_tablas
+(
+	cant_tablas_bdd1 nvarchar(max) default 'sin datos',
+	cant_tablas_bdd2 nvarchar(max) default 'sin datos'
+);
+
+
+
+--nombre de tablas que solo estan en la bdd 1
 create table tablas_bdd1
 (
 	tablas_que_soloEstaEnBDD1 nvarchar(max),
 	
 );
 
+--nombre de tablas que solo estan en la bdd 2
 create table tablas_bdd2
 (
-	tablas_que_soloEstaEnBDD2 nvarchar(max),
+	tablas_que_soloEstaEnBDD2 nvarchar(max) ,
 );
 
 
 
-create table Esquemas_bdd1
+
+create table mismo_nombre_Tablas
 (
-	esquema_que_soloEstaEnBDD1 nvarchar(max),	
-);
+	nombre nvarchar(max) ,
 
-create table Esquemas_bdd2
-(
-	esquema_que_soloEstaEnBDD2 nvarchar(max)
-);
-
-
-create table tablas_en_comun
-(
-	nombre_tablas nvarchar(max)
-);
-
-
-create table cant_columnas
-(
-	columnas_iguales nvarchar(max),
 )
+
+
+
+
+
+
+
+
 
 
 
@@ -70,7 +84,7 @@ set nocount on
 
 			
 		BEGIn
-			---------------------------------------------------------------
+				/************************************************************************************************/
 			--bloque que compara el nombre de los esquemas
 			begin	
 				begin tran
@@ -112,9 +126,7 @@ set nocount on
 				
 				commit tran
 			end 
-			------------------------------------------------------------------
-
-
+				/***********************************************************************************************************/
 
 			--transaccion para comparar tablas por nombre
 			begin 
@@ -146,7 +158,7 @@ set nocount on
 				
 
 
-				if(@nombre_tablaBdd2 is not null)
+				if(len(@nombre_tablaBdd2)>0)
 				insert into tablas_bdd2(tablas_que_soloEstaEnBDD2)
 				EXECUTE SP_EXECUTESQL @nombre_tablaBdd2;
 				
@@ -154,7 +166,7 @@ set nocount on
 				commit tran
 				
 			end
-			------------------------------------------------------------------------
+				/************************************************************************************************/
 			
 
 			--transaccion para comparar cantidad de tablas
@@ -198,47 +210,37 @@ set nocount on
 
 				commit tran
 			end
-			------------------------------------------------------------------------------------
+				/************************************************************************************************/
 
-			--transaccion para traer las tablas que estan en ambas bdd
+				--llenar mismasColumnas_mismasTablas
 			begin
 				begin tran
 					
-					declare @tablas_mismo_nombre nvarchar(max)
+					declare @queryDinamico nvarchar(max)
 	
-					set @tablas_mismo_nombre ='select name
-												from '+@bdd1+'.sys.tables
-												where '+@bdd1+'.sys.tables.name in(select name
-																					from '+@bdd2+'.sys.tables)'
+					set @queryDinamico ='select t.TABLE_NAME 
+										from '+@bdd1+'.INFORMATION_SCHEMA.columns t
+										where t.TABLE_NAME in (select i.TABLE_NAME
+																from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS i)
+															group by TABLE_NAME'
 
 
-					insert into tablas_en_comun(nombre_tablas)
-					exec sp_executesql @tablas_mismo_nombre;
+					insert into mismo_nombre_Tablas(nombre)
+					exec sp_executesql @queryDinamico;
 
 				commit tran
 			end
-			------------------------------------------------------------------------------------
-
-
-			
-			--transaccion para traer las tablas que estan en ambas bdd
-			begin
-				begin tran
-					
-					declare @cant_columnas nvarchar(max)
 	
-					set @tablas_mismo_nombre ='select name
-												from '+@bdd1+'.sys.tables
-												where '+@bdd1+'.sys.tables.name in(select name
-																					from '+@bdd2+'.sys.tables)'
 
 
-					insert into tablas_en_comun(nombre_tablas)
-					exec sp_executesql @tablas_mismo_nombre;
 
-				commit tran
-			end
-			------------------------------------------------------------------------------------
+	/************************************************************************************************/
+
+
+
+
+
+
 		ENd
 	end try
 
@@ -277,19 +279,61 @@ exec ComprobarQueExistanBDD 'comparar1','comparar2';
 
 
 
-
+--traigo la informaciona comparar
 select * from Esquemas_bdd1
 
 select * from Esquemas_bdd2
 
-select * from cant_tablas
+select t.cant_tablas_bdd1 as cantidad_total_de_tablas_bdd1, t.cant_tablas_bdd2 as cantidad_total_de_tablas_bdd2 from cant_tablas t
 
 select * from tablas_bdd1
 
 select * from tablas_bdd2
 
-select t.nombre_tablas as Tablas_en_comun_entre_las_bases_de_datos
-from tablas_en_comun t group by nombre_tablas;
+select nombre as tablas_con_mismo_nombre_en_ambas_bdd from mismo_nombre_Tablas
+
+
+
+
+
+
+select a.table_catalog as nombre_de_bdd,
+		a.TABLE_NAME as nombre_tablas_en_comun,
+		a.COLUMN_NAME as nombre_columna,
+		a.DATA_TYPE as tipo_dato,
+		a.IS_NULLABLE as permite_null,
+		a.ORDINAL_POSITION as posicion_en_tabla
+from comparar1.INFORMATION_SCHEMA.COLUMNS a
+where a.TABLE_NAME in (select TABLE_NAME
+						from comparar2.INFORMATION_SCHEMA.COLUMNS)
+						
+union all
+select a.table_catalog,
+		a.TABLE_NAME ,
+		a.COLUMN_NAME, 
+		a.DATA_TYPE,
+		a.IS_NULLABLE, 
+		a.ORDINAL_POSITION 
+from comparar2.INFORMATION_SCHEMA.COLUMNS a
+where a.TABLE_NAME in (select TABLE_NAME
+						from comparar1.INFORMATION_SCHEMA.COLUMNS)
+						order by TABLE_NAME
+
+
+
+
+
+
+
+
+--tipo de datos,de las columnas en tablas de mismo nombre
+select a.table_catalog as nombre_de_bdd,a.TABLE_NAME,a.COLUMN_NAME,a.DATA_TYPE
+from comparar1.INFORMATION_SCHEMA.COLUMNS a
+
+
+select *
+from comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+
 
 /*
 
@@ -322,27 +366,48 @@ WHERE table_name = 'cant_tablas'
 
 
 
---mostrar nombre de tablas que estan en ambas bdd
-select t.TABLE_NAME as tablas_en_ambas_bdd,COLUMN_NAME as columnas_iguales
-from comparar1.INFORMATION_SCHEMA.columns t
+
+/*************************************************/
+
+--info bdd1
+select  t.table_catalog as nombre_de_bdd,
+		t.TABLE_NAME as nombre_tabla,
+		t.COLUMN_NAME as nombre_columna,
+		t.DATA_TYPE as tipo_dato,
+		t.IS_NULLABLE as es_null,
+		t.ORDINAL_POSITION as posicion_en_tabla
+from comparar1.INFORMATION_SCHEMA.columns t 
 where t.TABLE_NAME in (select i.TABLE_NAME
-						from comparar2.INFORMATION_SCHEMA.COLUMNS i)and t.COLUMN_NAME in(select c.COLUMN_NAME
-																						from comparar2.INFORMATION_SCHEMA.COLUMNS c)
-order by t.TABLE_NAME
+						from comparar2.INFORMATION_SCHEMA.COLUMNS i)
+			order by TABLE_NAME			
+		
+					
 
 
 
 
 
 
---mostrar cantidad de tablas
 
-select t.TABLE_NAME as tablas_mismo_nombre,count(COLUMN_NAME) as cant_columnas_iguales
-from comparar1.INFORMATION_SCHEMA.columns t
-where t.TABLE_NAME in (select i.TABLE_NAME
-						from comparar2.INFORMATION_SCHEMA.COLUMNS i)and t.COLUMN_NAME in(select c.COLUMN_NAME
-																						from comparar2.INFORMATION_SCHEMA.COLUMNS c)
-group by TABLE_NAME
+select a.TABLE_CATALOG as bdd1, count(a.TABLE_NAME)
+from comparar1.INFORMATION_SCHEMA.COLUMNS a
+group by TABLE_CATALOG
+
+
+
+
+
+select *
+from comparar1.INFORMATION_SCHEMA.columns
+
+
+select *
+from comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+union
+select *
+from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+
+
 
 
 
@@ -484,6 +549,52 @@ SELECT Id, Descripcion, Abreviatura, Comentarios FROM @Catalogos
 
 
 
+		/****************************************************************************************/
+
+			--transaccion para traer las tablas que estan en ambas bdd
+		/*	begin
+				begin tran
+					
+					declare @tablas_mismo_nombre nvarchar(max)
+	
+					set @tablas_mismo_nombre ='select name
+												from '+@bdd1+'.sys.tables
+												where '+@bdd1+'.sys.tables.name in(select name
+																					from '+@bdd2+'.sys.tables)'
+
+
+					insert into tablas_en_comun(nombre_tablas)
+					exec sp_executesql @tablas_mismo_nombre;
+
+				commit tran
+			end*/
+			/************************************************************************************************/
+
+
+			
+			--transaccion para trar la cantidad de columnas en comun para tablas con mismo nombre
+		/*	begin
+				begin tran
+					
+					declare @cant_columnas nvarchar(max)
+	
+					set @tablas_mismo_nombre ='select name
+												from '+@bdd1+'.sys.tables
+												where '+@bdd1+'.sys.tables.name in(select name
+																					from '+@bdd2+'.sys.tables)'
+
+
+					insert into tablas_en_comun(nombre_tablas)
+					exec sp_executesql @tablas_mismo_nombre;
+
+				commit tran
+			end*/
+				/************************************************************************************************/
 
 
 
+
+select *
+from comparar1.INFORMATION_SCHEMA.COLUMNS t
+where t.TABLE_SCHEMA not in(select TABLE_SCHEMA
+								from comparar2.INFORMATION_SCHEMA.columns)
