@@ -3,7 +3,6 @@ go
 IF EXISTS(select * from sys.databases where name='comparaciones')
 DROP DATABASE comparaciones
 
-
 create database comparaciones;
 
 use comparaciones;
@@ -44,7 +43,6 @@ create table Esquemas_bdd2
 
 create table tablas_en_comun
 (
-	id int primary key,
 	nombre_tablas nvarchar(max)
 );
 
@@ -286,28 +284,12 @@ select * from Esquemas_bdd2
 
 select * from cant_tablas
 
-
 select * from tablas_bdd1
 
-select case when len(t.tablas_que_soloEstaEnBDD2)>0 then t.tablas_que_soloEstaEnBDD2
-			when len(t.tablas_que_soloEstaEnBDD2) is null then 'sin datos' end  from tablas_bdd2 t
+select * from tablas_bdd2
 
-
-select * 
-from tablas_en_comun
-
-
-
---numero de columnas de una tabla
-
-SELECT count(*) as cantidad_de_columnas
-FROM information_schema.columns t
-WHERE t.table_name='com.t1'
-
-
-
-
-
+select t.nombre_tablas as Tablas_en_comun_entre_las_bases_de_datos
+from tablas_en_comun t group by nombre_tablas;
 
 /*
 
