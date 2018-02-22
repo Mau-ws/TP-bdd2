@@ -70,6 +70,12 @@ create table datos_de_tablas_con_mismo_nombre
 	posicion_en_tabla int
 )
 
+create table campos_unique
+(
+	nombre_bdd nvarchar(max),
+	nombre_tabla nvarchar(max),
+	nombre_col nvarchar(max)
+)
 
 
 
@@ -282,10 +288,33 @@ set nocount on
 
 	/************************************************************************************************/
 
+	/************************************************************************************************/
+	/*CAMPOS_UNIQUE*/
 
+	begin
+		begin tran
+					
+		declare @campos_unique nvarchar(max)
+	
+		set @campos_unique ='select u.TABLE_CATALOG,
+									u.CONSTRAINT_SCHEMA,
+									u.CONSTRAINT_TYPE
+							 from '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS U
+							 where U.CONSTRAINT_TYPE = ''UNIQUE''
+							 
+							 UNION
+							 select u.TABLE_CATALOG,
+									u.CONSTRAINT_SCHEMA,
+									u.CONSTRAINT_TYPE
+							from '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS U
+							where U.CONSTRAINT_TYPE = ''UNIQUE'''
 
+		insert into campos_unique(nombre_bdd,nombre_tabla,nombre_col)
+		exec sp_executesql @campos_unique;
+		commit tran
+		end
 
-
+	/************************************************************************************************/
 
 
 
@@ -344,6 +373,8 @@ select nombre as tablas_con_mismo_nombre_en_ambas_bdd from mismo_nombre_Tablas
 
 select * 
 from datos_de_tablas_con_mismo_nombre
+
+select * from campos_unique
 
 
 
@@ -659,3 +690,7 @@ select *
 from comparar1.INFORMATION_SCHEMA.COLUMNS t
 where t.TABLE_SCHEMA not in(select TABLE_SCHEMA
 								from comparar2.INFORMATION_SCHEMA.columns)
+
+	
+select * from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+select * from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS where CONSTRAINT_TYPE = 'UNIQUE'
