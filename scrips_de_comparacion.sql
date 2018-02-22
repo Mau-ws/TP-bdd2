@@ -78,6 +78,12 @@ create table campos_unique
 )
 
 
+create table cant_campos
+(
+	nombre_bdd nvarchar(max),
+	nombre_tabla nvarchar(max),
+	cant_colum nvarchar(max)
+);
 
 
 
@@ -288,7 +294,7 @@ set nocount on
 
 	/************************************************************************************************/
 
-	/************************************************************************************************/
+
 	/*CAMPOS_UNIQUE*/
 
 	begin
@@ -316,9 +322,45 @@ set nocount on
 
 	/************************************************************************************************/
 
+						--transaccion 
+						begin
+							begin tran
+
+						declare @cant_campos nvarchar(max);
+
+						set @cant_campos='select t.TABLE_CATALOG ,t.TABLE_NAME, count(t.COLUMN_NAME)
+											from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS t
+											where t.TABLE_NAME in(select TABLE_NAME from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS)
+											group by t.TABLE_NAME,t.TABLE_CATALOG
+
+											union all
+
+											select t.TABLE_CATALOG,t.TABLE_NAME, count(t.COLUMN_NAME)
+											from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS t
+											where t.TABLE_NAME in(select TABLE_NAME from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS)
+											group by t.TABLE_NAME,t.TABLE_CATALOG
+
+											order by TABLE_NAME'
 
 
 
+
+											insert into cant_campos(nombre_bdd,nombre_tabla,cant_colum)
+											execute sp_executesql @cant_campos
+
+
+						commit tran
+					end
+
+
+
+
+
+
+
+
+
+		/************************************************************************************************/
 		ENd
 	end try
 
@@ -375,6 +417,31 @@ select *
 from datos_de_tablas_con_mismo_nombre
 
 select * from campos_unique
+
+select * from cant_campos
+
+
+
+
+
+
+select t.TABLE_CATALOG as BDD,t.TABLE_NAME as nombre_tabla, count(t.COLUMN_NAME) as cantidad_de_columnas
+from comparar1.INFORMATION_SCHEMA.COLUMNS t
+where t.TABLE_NAME in(select TABLE_NAME from comparar2.INFORMATION_SCHEMA.COLUMNS)
+group by t.TABLE_NAME,t.TABLE_CATALOG
+
+union all
+
+select t.TABLE_CATALOG,t.TABLE_NAME, count(t.COLUMN_NAME)
+from comparar2.INFORMATION_SCHEMA.COLUMNS t
+where t.TABLE_NAME in(select TABLE_NAME from comparar1.INFORMATION_SCHEMA.COLUMNS)
+group by t.TABLE_NAME,t.TABLE_CATALOG
+
+order by TABLE_NAME
+
+
+
+
 
 
 
@@ -684,7 +751,7 @@ SELECT Id, Descripcion, Abreviatura, Comentarios FROM @Catalogos
 				/************************************************************************************************/
 
 
-
+/*
 
 select *
 from comparar1.INFORMATION_SCHEMA.COLUMNS t
@@ -694,3 +761,4 @@ where t.TABLE_SCHEMA not in(select TABLE_SCHEMA
 	
 select * from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 select * from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS where CONSTRAINT_TYPE = 'UNIQUE'
+*/
