@@ -42,7 +42,7 @@ create table com2.t4
 (
 id int not null,
 nombre varchar(20),
-color varchar(50) default 'Azul',
+color varchar(50) DEFAULT 'Azul',
 id_t3 int,
 constraint pk_id_t4 primary key (id),
 constraint fk_id_t3 foreign key (id_t3) references com2.t3(id)

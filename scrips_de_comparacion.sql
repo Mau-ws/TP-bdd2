@@ -8,8 +8,8 @@ create database comparaciones;
 use comparaciones;
 
 
-/**********************************************************************************/
---creacion de tablas para guardar la informacion de la comparacion
+/*************************** Creacion de tablas para guardar la informacion de la comparacion ***********************/
+
 
 
 --nombre de esquemas de la bdd1
@@ -49,16 +49,11 @@ create table tablas_bdd2
 	tablas_que_soloEstaEnBDD2 nvarchar(max) ,
 );
 
-
-
-
 create table mismo_nombre_Tablas
 (
 	nombre nvarchar(max) ,
 
 )
-
-
 
 create table datos_de_tablas_con_mismo_nombre
 (
@@ -72,9 +67,10 @@ create table datos_de_tablas_con_mismo_nombre
 
 create table campos_unique
 (
-	nombre_bdd nvarchar(max),
-	nombre_tabla nvarchar(max),
-	nombre_col nvarchar(max)
+	nombre_bdd nvarchar (max),
+	nombre_tabla nvarchar (max),
+	nombre_column nvarchar (max),
+	tipo_const nvarchar (max)
 )
 
 
@@ -94,8 +90,26 @@ create table campos_default
 	dato_default nvarchar (max)
 );
 
-/*********************************************/
---ver si existen las bdd a comparar
+create table campos_pk
+(
+	nombre_bdd nvarchar (max),
+	nombre_tabla nvarchar (max),
+	nombre_column nvarchar (max),
+	tipo_const nvarchar (max)
+)
+
+create table campos_fk
+(
+	nombre_bdd nvarchar (max),
+	nombre_tabla nvarchar (max),
+	nombre_column nvarchar (max),
+	tipo_const nvarchar (max)
+)
+
+/************************* Fin creacion de tablas para guardar la informacion de la comparacion *******************/
+
+/************************* Ver si existen las bdd a comparar *******************/
+
 go
 create procedure ComprobarQueExistanBDD @bdd1 varchar(max),@bdd2 varchar(max)
 as
@@ -301,32 +315,38 @@ set nocount on
 	/************************************************************************************************/
 
 
-	/*CAMPOS_UNIQUE*/
+/************************************ campos_unique *****************************************/
 
-	begin
-		begin tran
+						begin
+							begin tran
 					
-		declare @campos_unique nvarchar(max)
+							declare @campos_unique nvarchar(max)
 	
-		set @campos_unique ='select u.TABLE_CATALOG,
-									u.CONSTRAINT_SCHEMA,
-									u.CONSTRAINT_TYPE
-							 from '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS U
-							 where U.CONSTRAINT_TYPE = ''UNIQUE''
-							 
-							 UNION
-							 select u.TABLE_CATALOG,
-									u.CONSTRAINT_SCHEMA,
-									u.CONSTRAINT_TYPE
-							from '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS U
-							where U.CONSTRAINT_TYPE = ''UNIQUE'''
+							set @campos_unique = 'SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''UNIQUE''
+										  
+										  UNION
 
-		insert into campos_unique(nombre_bdd,nombre_tabla,nombre_col)
-		exec sp_executesql @campos_unique;
-		commit tran
-		end
+										  SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''UNIQUE'''
 
-	/************************************************************************************************/
+							insert into campos_unique(nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+							exec sp_executesql @campos_unique;
+							commit tran
+							end
+
+/************************************ campos_unique *****************************************/
+
 
 						--transaccion 
 						begin
@@ -359,35 +379,93 @@ set nocount on
 					end
 
 
+/************************************ campos_default ************************************/
 
-/*campos_default*/
+					begin
+						begin tran
+						declare @campos_default nvarchar (max);
 
-begin
-	begin tran
-	declare @campos_default nvarchar (max);
-
-	set @campos_default = 'SELECT D.TABLE_CATALOG,
-								  D.TABLE_NAME,
-								  D.COLUMN_NAME,
-								  D.COLUMN_DEFAULT
-						   FROM '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS D
-						   WHERE D.COLUMN_DEFAULT IS NOT NULL
+						set @campos_default = 'SELECT D.TABLE_CATALOG,
+													  D.TABLE_NAME,
+													  D.COLUMN_NAME,
+													  D.COLUMN_DEFAULT
+											   FROM '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS D
+											   WHERE D.COLUMN_DEFAULT IS NOT NULL
 						   
-						   UNION
+											   UNION
 						   
-						   SELECT D.TABLE_CATALOG,
-								  D.TABLE_NAME,
-								  D.COLUMN_NAME,
-								  D.COLUMN_DEFAULT
-						   FROM '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS D
-						   WHERE D.COLUMN_DEFAULT IS NOT NULL' 
+											   SELECT D.TABLE_CATALOG,
+													  D.TABLE_NAME,
+													  D.COLUMN_NAME,
+													  D.COLUMN_DEFAULT
+											   FROM '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS D
+											   WHERE D.COLUMN_DEFAULT IS NOT NULL' 
 
-insert into campos_default (nombre_bdd, nombre_tabla, nombre_column,dato_default)
-exec sp_executesql @campos_default;
-commit tran
-end
+					insert into campos_default (nombre_bdd, nombre_tabla, nombre_column,dato_default)
+					exec sp_executesql @campos_default;
+					commit tran
+					end
 
-		/************************************************************************************************/
+/************************************ campos_default ************************************/
+
+/************************************ campos_pk *****************************************/
+					begin
+						begin tran
+						declare @campos_pk nvarchar (max);
+
+						set @campos_pk = 'SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''PRIMARY KEY''
+										  
+										  UNION
+
+										  SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''PRIMARY KEY'''
+					insert into campos_pk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+					exec sp_executesql @campos_pk;
+					commit tran
+					end 
+
+/************************************ campos_pk *****************************************/
+
+/************************************ campos_fk *****************************************/
+					begin
+						begin tran
+						declare @campos_fk nvarchar (max);
+
+						set @campos_fk = 'SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''FOREIGN KEY''
+										  
+										  UNION
+
+										  SELECT t.CONSTRAINT_CATALOG, 
+											     t.table_name,
+											     c.column_name,
+											     t.CONSTRAINT_TYPE 
+										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  WHERE CONSTRAINT_TYPE = ''FOREIGN KEY'''
+					insert into campos_fk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+					exec sp_executesql @campos_fk;
+					commit tran
+					end 
+
+/************************************ campos_fk *****************************************/
+/************************************************************************************************/
 		ENd
 	end try
 
@@ -418,8 +496,8 @@ end
 END
 
 
+/************************* Ejecuto el procedimiento *******************/
 
---ejecuto el procedimiento
 
 
 exec ComprobarQueExistanBDD 'comparar1','comparar2';
@@ -448,6 +526,10 @@ select * from campos_unique
 select * from cant_campos
 
 select * from campos_default
+
+select * from campos_pk
+
+select * from campos_fk
 
 
 
@@ -789,6 +871,21 @@ where t.TABLE_SCHEMA not in(select TABLE_SCHEMA
 select * from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 select * from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS where CONSTRAINT_TYPE = 'UNIQUE'
 */
+go
+SELECT t.CONSTRAINT_CATALOG, 
+	   t.table_name,
+	   c.column_name,
+	   t.CONSTRAINT_TYPE 
+FROM   comparar2.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 
-select *
-from comparar2.sys.
+SELECT * FROM comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+select * from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+
+SELECT t.CONSTRAINT_CATALOG, 
+	   t.table_name,
+	   c.column_name,
+	   t.CONSTRAINT_TYPE 
+FROM   comparar2.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
+inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+WHERE CONSTRAINT_TYPE = 'PRIMARY KEY'

@@ -46,7 +46,7 @@ create table com1.t5
 (
 id int not null,
 nombre varchar(20),
-carrera varchar (30) default 'ninguna',
+carrera varchar (30) DEFAULT 'ninguna',
 constraint pk_ide primary key (id)
 );
 
