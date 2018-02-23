@@ -25,7 +25,7 @@ constraint pk_idb primary key (id)
 
 create table com1.t3
 (
-id int not null,
+id int identity not null,
 nombre varchar(20)
 constraint pk_idc primary key (id)
 );
@@ -50,11 +50,16 @@ carrera varchar (30) DEFAULT 'ninguna',
 constraint pk_ide primary key (id)
 );
 
+create table com1.t6
+(
+id_t6 int primary key identity,
+nombre varchar(20),
+carrera varchar (30) ,
+);
 
 
+alter table com1.t2
+add check (len(nombre2)>5)
 
-
-
-
-
-
+alter table com1.t1
+add check (len(nombres)>5)

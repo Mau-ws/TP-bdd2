@@ -106,6 +106,15 @@ create table campos_fk
 	tipo_const nvarchar (max)
 )
 
+
+create table campos_check
+(
+	BDD  nvarchar(max),
+	esquema nvarchar(max),
+	tabla nvarchar(max),
+	tipo nvarchar(max),
+	columna nvarchar(max)
+)
 /************************* Fin creacion de tablas para guardar la informacion de la comparacion *******************/
 
 /************************* Ver si existen las bdd a comparar *******************/
@@ -418,7 +427,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''PRIMARY KEY''
 										  
 										  UNION
@@ -428,7 +437,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''PRIMARY KEY'''
 					insert into campos_pk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
 					exec sp_executesql @campos_pk;
@@ -447,7 +456,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''FOREIGN KEY''
 										  
 										  UNION
@@ -457,7 +466,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''FOREIGN KEY'''
 					insert into campos_fk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
 					exec sp_executesql @campos_fk;
@@ -465,7 +474,39 @@ set nocount on
 					end 
 
 /************************************ campos_fk *****************************************/
-/************************************************************************************************/
+
+
+
+/**************************************campos check********************************************/
+
+						begin
+							begin tran
+							declare @campo_check nvarchar(max)
+
+							set @campo_check='select t.CONSTRAINT_CATALOG,t.CONSTRAINT_SCHEMA,t.TABLE_NAME,t.CONSTRAINT_TYPE,c.COLUMN_NAME
+											from '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS t inner join
+												 '+@bdd1+'.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE c on t.CONSTRAINT_NAME=c.CONSTRAINT_NAME
+												 where CONSTRAINT_TYPE =''CHECK''
+												 and t.TABLE_NAME in(select TABLE_NAME
+																		from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS)
+
+												 union
+
+											select t.CONSTRAINT_CATALOG,t.CONSTRAINT_SCHEMA,t.TABLE_NAME,t.CONSTRAINT_TYPE,c.COLUMN_NAME
+											from '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS t inner join
+												 '+@bdd2+'.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE c on t.CONSTRAINT_NAME=c.CONSTRAINT_NAME
+												 where CONSTRAINT_TYPE =''CHECK''
+												 and t.TABLE_NAME in(select TABLE_NAME
+																		from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS)
+												 order by TABLE_NAME'
+
+
+						insert into campos_check(BDD,esquema,tabla,tipo,columna)
+						exec sp_executesql @campo_check
+						commit
+
+					end
+/**********************************************************************************************/
 		ENd
 	end try
 
@@ -531,125 +572,96 @@ select * from campos_pk
 
 select * from campos_fk
 
-
-
-
-select t.TABLE_CATALOG as BDD,t.TABLE_NAME as nombre_tabla, count(t.COLUMN_NAME) as cantidad_de_columnas
-from comparar1.INFORMATION_SCHEMA.COLUMNS t
-where t.TABLE_NAME in(select TABLE_NAME from comparar2.INFORMATION_SCHEMA.COLUMNS)
-group by t.TABLE_NAME,t.TABLE_CATALOG
-
-union all
-
-select t.TABLE_CATALOG,t.TABLE_NAME, count(t.COLUMN_NAME)
-from comparar2.INFORMATION_SCHEMA.COLUMNS t
-where t.TABLE_NAME in(select TABLE_NAME from comparar1.INFORMATION_SCHEMA.COLUMNS)
-group by t.TABLE_NAME,t.TABLE_CATALOG
-
-order by TABLE_NAME
+select *
+from campos_check
 
 
 
 
 
 
+SELECT * FROM comparar2.sys.syscolumns WHERE colstat = 1
+
+select *
+from comparar1.sys.identity_columns
 
 
+ 
 
-/*
-select a.table_catalog as nombre_de_bdd,
-		a.TABLE_NAME as nombre_tablas_en_comun,
-		a.COLUMN_NAME as nombre_columna,
-		a.DATA_TYPE as tipo_dato,
-		a.IS_NULLABLE as permite_null,
-		a.ORDINAL_POSITION as posicion_en_tabla
-from comparar1.INFORMATION_SCHEMA.COLUMNS a
-where a.TABLE_NAME in (select TABLE_NAME
-						from comparar2.INFORMATION_SCHEMA.COLUMNS)
-						
-union all
-select a.table_catalog,
-		a.TABLE_NAME ,
-		a.COLUMN_NAME, 
-		a.DATA_TYPE,
-		a.IS_NULLABLE, 
-		a.ORDINAL_POSITION 
-from comparar2.INFORMATION_SCHEMA.COLUMNS a
-where a.TABLE_NAME in (select TABLE_NAME
-						from comparar1.INFORMATION_SCHEMA.COLUMNS)
-						order by TABLE_NAME
+select *
+from comparar1.sys.identity_columns
+where object_id not in(1993058136,2025058250,2057058364)
+
+select *
+from comparar1.sys.identity_columns
+where object_id not in(1993058136,2025058250,2057058364)
 
 
 
 
-*/
+select  distinct /*c.TABLE_CATALOG, s.name as esquema*/t.name as tabla ,i.name as columna, case when i.is_identity=1 then 'Identity' end as Es_IDENTITY
+from comparar1.sys.tables t inner join comparar2.sys.identity_columns i on t.object_id=i.object_id
+							inner join comparar2.sys.schemas s on s.schema_id in (t.schema_id)	
+						/*	inner join comparar2.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			*/
+							
+where i.is_identity=1
 
-
-
-/*
-
---tipo de datos,de las columnas en tablas de mismo nombre
-select a.table_catalog as nombre_de_bdd,a.TABLE_NAME,a.COLUMN_NAME,a.DATA_TYPE
-from comparar1.INFORMATION_SCHEMA.COLUMNS a
 
 
 select *
-from comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-
-
-*/
+from comparar2.sys.schemas
 
 
 
 
+select*
+from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+
+select *
+from comparar1.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE
+
+
+
+
+
+
+
+
+
+--check
 
 /*
+select t.CONSTRAINT_CATALOG,t.CONSTRAINT_SCHEMA,t.TABLE_NAME,t.CONSTRAINT_TYPE,c.COLUMN_NAME
+from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS t inner join
+	 comparar1.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE c on t.CONSTRAINT_NAME=c.CONSTRAINT_NAME
+	 where CONSTRAINT_TYPE ='CHECK'
+	 and t.TABLE_NAME in(select TABLE_NAME
+							from comparar2.INFORMATION_SCHEMA.COLUMNS)
 
-/**********************************/
---lo siguiente son codigos de pruebas para tenerlos de referencia, hay que sacarlos luego
+	 union
 
-select DB_ID('comparar2');
-
-
-select DB_ID('comparar1');
-
-
-
-
- */
- --devuelve el nombre de la columna de una tabla
- /*
-select COL_NAME(object_id('cant_tablas'),1)
+select t.CONSTRAINT_CATALOG,t.CONSTRAINT_SCHEMA,t.TABLE_NAME,t.CONSTRAINT_TYPE,c.COLUMN_NAME
+from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS t inner join
+	 comparar2.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE c on t.CONSTRAINT_NAME=c.CONSTRAINT_NAME
+	 where CONSTRAINT_TYPE ='CHECK'
+	 and t.TABLE_NAME in(select TABLE_NAME
+							from comparar1.INFORMATION_SCHEMA.COLUMNS)
+	 order by TABLE_NAME
 
 
-*/
-/*
-
-SELECT count(*) as cantidad_de_columnas
-FROM information_schema.columns
-WHERE table_name = 'cant_tablas'
-*/
+	 */
 
 
 
 
 
+--traer indices
+select * from comparar1.sys.indexes
+
+										 
 
 /*************************************************/
 
---info bdd1
-select  t.table_catalog as nombre_de_bdd,
-		t.TABLE_NAME as nombre_tabla,
-		t.COLUMN_NAME as nombre_columna,
-		t.DATA_TYPE as tipo_dato,
-		t.IS_NULLABLE as es_null,
-		t.ORDINAL_POSITION as posicion_en_tabla
-from comparar1.INFORMATION_SCHEMA.columns t 
-where t.TABLE_NAME in (select i.TABLE_NAME
-						from comparar2.INFORMATION_SCHEMA.COLUMNS i)
-			order by TABLE_NAME			
-		
-					
 
 
 
@@ -657,23 +669,9 @@ where t.TABLE_NAME in (select i.TABLE_NAME
 
 
 
-select a.TABLE_CATALOG as bdd1, count(a.TABLE_NAME)
-from comparar1.INFORMATION_SCHEMA.COLUMNS a
-group by TABLE_CATALOG
 
 
 
-
-
-select *
-from comparar1.INFORMATION_SCHEMA.columns
-
-
-select *
-from comparar1.INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-union
-select *
-from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 
 
 
