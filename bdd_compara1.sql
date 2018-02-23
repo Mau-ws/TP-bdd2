@@ -9,7 +9,7 @@ go
 
 create table com1.t1
 (
-ids int primary key,
+ids int identity primary key,
 nombres varchar(20)
 );
 

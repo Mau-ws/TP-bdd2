@@ -86,7 +86,13 @@ create table cant_campos
 );
 
 
-
+create table campos_default
+(
+	nombre_bdd nvarchar (max),
+	nombre_tabla nvarchar (max),
+	nombre_column nvarchar (max),
+	dato_default nvarchar (max)
+);
 
 /*********************************************/
 --ver si existen las bdd a comparar
@@ -354,11 +360,32 @@ set nocount on
 
 
 
+/*campos_default*/
 
+begin
+	begin tran
+	declare @campos_default nvarchar (max);
 
+	set @campos_default = 'SELECT D.TABLE_CATALOG,
+								  D.TABLE_NAME,
+								  D.COLUMN_NAME,
+								  D.COLUMN_DEFAULT
+						   FROM '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS D
+						   WHERE D.COLUMN_DEFAULT IS NOT NULL
+						   
+						   UNION
+						   
+						   SELECT D.TABLE_CATALOG,
+								  D.TABLE_NAME,
+								  D.COLUMN_NAME,
+								  D.COLUMN_DEFAULT
+						   FROM '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS D
+						   WHERE D.COLUMN_DEFAULT IS NOT NULL' 
 
-
-
+insert into campos_default (nombre_bdd, nombre_tabla, nombre_column,dato_default)
+exec sp_executesql @campos_default;
+commit tran
+end
 
 		/************************************************************************************************/
 		ENd
@@ -420,7 +447,7 @@ select * from campos_unique
 
 select * from cant_campos
 
-
+select * from campos_default
 
 
 
@@ -762,3 +789,6 @@ where t.TABLE_SCHEMA not in(select TABLE_SCHEMA
 select * from comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 select * from comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS where CONSTRAINT_TYPE = 'UNIQUE'
 */
+
+select *
+from comparar2.sys.
