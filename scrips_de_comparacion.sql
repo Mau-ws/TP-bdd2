@@ -116,7 +116,14 @@ create table campos_check
 	columna nvarchar(max)
 )
 
-
+create table campos_identity
+(
+	bdd_name nvarchar(max),
+	esquema nvarchar (max),
+	tabla nvarchar(max),
+	columna nvarchar(max),
+	es_identity nvarchar(max)
+);
 
 
 
@@ -538,6 +545,40 @@ set nocount on
 							commit
 						end
 /**********************************************************************************************/
+
+						begin
+							begin tran
+
+							declare @campos_identity nvarchar(max);
+
+
+
+							set @campos_identity='select  distinct c.TABLE_CATALOG, s.name ,t.name  ,i.name , case when i.is_identity=1 then ''Identity'' end as Es_IDENTITY
+												from '+@bdd1+'.sys.tables t inner join '+@bdd1+'.sys.identity_columns i on t.object_id=i.object_id
+												inner join '+@bdd1+'.sys.schemas s on s.schema_id in (t.schema_id)	
+												inner join '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			
+							
+												where i.is_identity=1
+
+
+												union
+												select  distinct c.TABLE_CATALOG, s.name as esquema,t.name as tabla ,i.name as columna, case when i.is_identity=1 then ''Identity'' end as Es_IDENTITY
+												from '+@bdd2+'.sys.tables t inner join '+@bdd2+'.sys.identity_columns i on t.object_id=i.object_id
+												inner join '+@bdd2+'.sys.schemas s on s.schema_id in (t.schema_id)	
+												inner join '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			
+							
+												where i.is_identity=1
+'
+							
+							begin
+								insert into campos_identity(bdd_name,esquema,tabla,columna,es_identity)
+								exec sp_executesql @campos_identity
+							end
+							
+						commit tran
+					end
+
+/**********************************************************************************************/
 		ENd
 	end try
 
@@ -554,7 +595,7 @@ set nocount on
 		(@descripcion_error, ERROR_MESSAGE(),ERROR_LINE(), ERROR_PROCEDURE(),GETDATE(),SYSTEM_USER);
 
 
-		RAISERROR (@ErrorMessage,16,@ErrorState);
+		RAISERROR (@descripcion_error,16,1);
 		
 	end catch
 	
@@ -600,6 +641,16 @@ select *
 from campos_check
 
 
+select * 
+from campos_identity
+
+
+
+
+
+
+
+
 
 
 
@@ -623,17 +674,30 @@ where object_id not in(1993058136,2025058250,2057058364)
 
 
 
-select  distinct /*c.TABLE_CATALOG, s.name as esquema*/t.name as tabla ,i.name as columna, case when i.is_identity=1 then 'Identity' end as Es_IDENTITY
-from comparar1.sys.tables t inner join comparar2.sys.identity_columns i on t.object_id=i.object_id
+
+
+
+select  distinct c.TABLE_CATALOG, s.name as esquema,t.name as tabla ,i.name as columna, case when i.is_identity=1 then 'Identity' end as Es_IDENTITY
+from comparar2.sys.tables t inner join comparar2.sys.identity_columns i on t.object_id=i.object_id
 							inner join comparar2.sys.schemas s on s.schema_id in (t.schema_id)	
-						/*	inner join comparar2.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			*/
+							inner join comparar2.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			
+							
+where i.is_identity=1
+
+
+union
+select  distinct c.TABLE_CATALOG, s.name as esquema,t.name as tabla ,i.name as columna, case when i.is_identity=1 then 'Identity' end as Es_IDENTITY
+from comparar1.sys.tables t inner join comparar1.sys.identity_columns i on t.object_id=i.object_id
+							inner join comparar1.sys.schemas s on s.schema_id in (t.schema_id)	
+							inner join comparar1.INFORMATION_SCHEMA.COLUMNS c on c.TABLE_SCHEMA=s.name			
 							
 where i.is_identity=1
 
 
 
-select *
-from comparar2.sys.schemas
+
+
+
 
 
 
