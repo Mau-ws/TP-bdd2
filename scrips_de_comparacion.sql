@@ -115,15 +115,34 @@ create table campos_check
 	tipo nvarchar(max),
 	columna nvarchar(max)
 )
+
+
+
+
+
+create table LOGERRORES
+(
+	id int identity,
+	descripcion varchar(max),
+	mensage_de_error nvarchar(max),
+	error_procedimiento nvarchar(max),
+	line_error int,
+	id_usuario varchar(max),
+	fecha datetime
+)
+
+
 /************************* Fin creacion de tablas para guardar la informacion de la comparacion *******************/
 
 /************************* Ver si existen las bdd a comparar *******************/
+
 
 go
 create procedure ComprobarQueExistanBDD @bdd1 varchar(max),@bdd2 varchar(max)
 as
 BEGIN
 set nocount on
+	declare @descripcion_error varchar(max);
 	begin try
 
 		--veo si existen las bdd, y manda un mensaje dependiendo cual no esta
@@ -163,15 +182,17 @@ set nocount on
 
 				/*valido que los que traiga la consulta no se a null, solo asi se guarda en la tabla
 				*/
-					if (@query_esquemas is not null)
-					insert into Esquemas_bdd1(esquema_que_soloEstaEnBDD1)
-					execute sp_executesql @query_esquemas
+					
+					begin
+						insert into Esquemas_bdd1(esquema_que_soloEstaEnBDD1)
+						execute sp_executesql @query_esquemas
+					end
 
-
-					if(@query_esquemas2 is not null)
-					insert into Esquemas_bdd2(esquema_que_soloEstaEnBDD2)
-					execute sp_executesql @query_esquemas2
-				
+					
+					begin
+						insert into Esquemas_bdd2(esquema_que_soloEstaEnBDD2)
+						execute sp_executesql @query_esquemas2
+					end			
 				
 				commit tran
 			end 
@@ -200,18 +221,16 @@ set nocount on
 
 
 
-				if(@nombre_tablaBdd1 is not null)
-				insert into tablas_bdd1(tablas_que_soloEstaEnBDD1)
-				EXECUTE SP_EXECUTESQL @nombre_tablaBdd1;
-				
+				begin
+					insert into tablas_bdd1(tablas_que_soloEstaEnBDD1)
+					EXECUTE SP_EXECUTESQL @nombre_tablaBdd1;
+				end
 				
 
-
-				if(len(@nombre_tablaBdd2)>0)
-				insert into tablas_bdd2(tablas_que_soloEstaEnBDD2)
-				EXECUTE SP_EXECUTESQL @nombre_tablaBdd2;
-				
-				
+				begin
+					insert into tablas_bdd2(tablas_que_soloEstaEnBDD2)
+					EXECUTE SP_EXECUTESQL @nombre_tablaBdd2;
+				end				
 				commit tran
 				
 			end
@@ -251,10 +270,10 @@ set nocount on
 					exec sp_executesql @cant_tablas_bdd2,N'@aux_cant_tablas2 nvarchar(max) OUTPUT',@aux_cant_tablas2=@cant_tablas_bdd2 output;
 					
 
-					
+					begin
 					insert into cant_tablas(cant_tablas_bdd1,cant_tablas_bdd2) values
 					(@cant_tablas_bdd1,@cant_tablas_bdd2);
-
+					end
 
 
 				commit tran
@@ -273,9 +292,10 @@ set nocount on
 																		from '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS i)
 																	group by TABLE_NAME'
 
-
+						begin
 							insert into mismo_nombre_Tablas(nombre)
 							exec sp_executesql @queryDinamico;
+						end
 
 						commit tran
 					end
@@ -313,10 +333,10 @@ set nocount on
 																						order by TABLE_NAME
 '
 
-
-							insert into datos_de_tablas_con_mismo_nombre(nombre_bdd,nombre_tablas_en_comun,nombre_columnas,tipo_dato,permite_null,posicion_en_tabla)
-							exec sp_executesql @datos_tablas_mismo_nombre;
-
+							begin
+								insert into datos_de_tablas_con_mismo_nombre(nombre_bdd,nombre_tablas_en_comun,nombre_columnas,tipo_dato,permite_null,posicion_en_tabla)
+								exec sp_executesql @datos_tablas_mismo_nombre;
+							end
 						commit tran
 					end
 
@@ -349,8 +369,10 @@ set nocount on
 										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''UNIQUE'''
 
-							insert into campos_unique(nombre_bdd,nombre_tabla,nombre_column,tipo_const)
-							exec sp_executesql @campos_unique;
+								begin
+									insert into campos_unique(nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+									exec sp_executesql @campos_unique;
+								end
 							commit tran
 							end
 
@@ -379,11 +401,11 @@ set nocount on
 
 
 
-
+										begin
 											insert into cant_campos(nombre_bdd,nombre_tabla,cant_colum)
 											execute sp_executesql @cant_campos
 
-
+										end
 						commit tran
 					end
 
@@ -410,8 +432,10 @@ set nocount on
 											   FROM '+@bdd2+'.INFORMATION_SCHEMA.COLUMNS D
 											   WHERE D.COLUMN_DEFAULT IS NOT NULL' 
 
-					insert into campos_default (nombre_bdd, nombre_tabla, nombre_column,dato_default)
-					exec sp_executesql @campos_default;
+							begin
+								insert into campos_default (nombre_bdd, nombre_tabla, nombre_column,dato_default)
+								exec sp_executesql @campos_default;
+							end
 					commit tran
 					end
 
@@ -439,8 +463,12 @@ set nocount on
 										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
 										  inner join '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''PRIMARY KEY'''
-					insert into campos_pk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
-					exec sp_executesql @campos_pk;
+
+
+								begin
+								insert into campos_pk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+								exec sp_executesql @campos_pk;
+								end
 					commit tran
 					end 
 
@@ -468,8 +496,11 @@ set nocount on
 										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
 										  inner join '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''FOREIGN KEY'''
-					insert into campos_fk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
-					exec sp_executesql @campos_fk;
+					
+					begin
+						insert into campos_fk (nombre_bdd,nombre_tabla,nombre_column,tipo_const)
+						exec sp_executesql @campos_fk;
+					end
 					commit tran
 					end 
 
@@ -500,12 +531,12 @@ set nocount on
 																		from '+@bdd1+'.INFORMATION_SCHEMA.COLUMNS)
 												 order by TABLE_NAME'
 
-
-						insert into campos_check(BDD,esquema,tabla,tipo,columna)
-						exec sp_executesql @campo_check
-						commit
-
-					end
+							begin
+									insert into campos_check(BDD,esquema,tabla,tipo,columna)
+									exec sp_executesql @campo_check
+							end
+							commit
+						end
 /**********************************************************************************************/
 		ENd
 	end try
@@ -513,25 +544,18 @@ set nocount on
 
 	begin catch
 		IF(@@TRANCOUNT > 0)
-		BEGIN
-			-- HACEMOS ROLLBACK DE TODAS LAS TRANSACCIONES ANTERIORES
+		begin
 			ROLLBACK TRAN
+		end
+		
+		select @descripcion_error='no se pudo insertar los datos - '+ERROR_MESSAGE();
 
-			DECLARE @ErrorMessage NVARCHAR(4000);
-			DECLARE @ErrorSeverity INT;
-			DECLARE @ErrorState INT;
+		insert into LOGERRORES(descripcion,mensage_de_error,line_error,error_procedimiento,fecha,id_usuario) values
+		(@descripcion_error, ERROR_MESSAGE(),ERROR_LINE(), ERROR_PROCEDURE(),GETDATE(),SYSTEM_USER);
 
-			
-		SELECT 
-			@ErrorMessage = ERROR_MESSAGE(),
-			@ErrorSeverity = ERROR_SEVERITY(),
-			@ErrorState = ERROR_STATE();
 
-			RAISERROR (@ErrorMessage, -- Message text.
-				   16, -- Severity.
-				   @ErrorState -- State.
-				  );
-		ENd	
+		RAISERROR (@ErrorMessage,16,@ErrorState);
+		
 	end catch
 	
 END
