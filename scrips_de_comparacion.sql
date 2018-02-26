@@ -363,7 +363,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd1+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar1.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd1+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''UNIQUE''
 										  
 										  UNION
@@ -373,7 +373,7 @@ set nocount on
 											     c.column_name,
 											     t.CONSTRAINT_TYPE 
 										  FROM   '+@bdd2+'.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS C
-										  inner join comparar2.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+										  inner join '+@bdd2+'.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS T ON T.CONSTRAINT_NAME = C.CONSTRAINT_NAME
 										  WHERE CONSTRAINT_TYPE = ''UNIQUE'''
 
 								begin
