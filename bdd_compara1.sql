@@ -58,6 +58,16 @@ carrera varchar (30) ,
 );
 
 
+
+create table com1.t7
+(
+	idT2 int not null,
+	idT3 int identity not null,
+	primary key (idT2,idT3),
+	constraint fk_id_t2 foreign key (idT2) references com1.t2(id),
+	constraint fk_id_t3 foreign key (idT3) references com1.t3(id)
+)
+
 alter table com1.t2
 add check (len(nombre2)>5)
 
