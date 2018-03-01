@@ -11,14 +11,11 @@ use comparaciones;
 /*************************** Creacion de tablas para guardar la informacion de la comparacion ***********************/
 
 
-
---nombre de esquemas de la bdd1
 create table Esquemas_bdd1
 (
 	esquema_que_soloEstaEnBDD1 nvarchar(max) default 'sin datos',	
 );
 
---nombre de esquemas de la bdd2
 create table Esquemas_bdd2
 (
 	esquema_que_soloEstaEnBDD2 nvarchar(max)default 'sin datos'
@@ -27,7 +24,6 @@ create table Esquemas_bdd2
 
 
 
---cantidad de tablas de ambas bdd, sin contar  las del sistema
 create table cant_tablas
 (
 	cant_tablas_bdd1 nvarchar(max) default 'sin datos',
@@ -36,27 +32,23 @@ create table cant_tablas
 
 
 
---nombre de tablas que solo estan en la bdd 1
 create table tablas_bdd1
 (
 	tablas_que_soloEstaEnBDD1 nvarchar(max),
 	
 );
 
---nombre de tablas que solo estan en la bdd 2
 create table tablas_bdd2
 (
 	tablas_que_soloEstaEnBDD2 nvarchar(max) ,
 );
 
---tablas en comun de ambas bdd
 create table mismo_nombre_Tablas
 (
 	nombre nvarchar(max) ,
 
 )
-/*tipos de datos,si permite null o no,y pocicion en tabla de 
-las columnas cen tablas con mismo nombre */
+
 create table datos_de_tablas_con_mismo_nombre
 (
 	nombre_bdd nvarchar(max),
@@ -67,7 +59,6 @@ create table datos_de_tablas_con_mismo_nombre
 	posicion_en_tabla int
 )
 
---todos los campos unique
 create table campos_unique
 (
 	nombre_bdd nvarchar (max),
@@ -76,7 +67,7 @@ create table campos_unique
 	tipo_const nvarchar (max)
 )
 
---cantidad de campos de tablas con mismo nombre
+
 create table cant_campos
 (
 	nombre_bdd nvarchar(max),
@@ -84,7 +75,8 @@ create table cant_campos
 	cant_colum nvarchar(max)
 );
 
---todos los campos default
+
+
 create table campos_default
 (
 	nombre_bdd nvarchar (max),
@@ -594,8 +586,6 @@ set nocount on
 						commit tran
 					end
 					
-/**************************************************************************************************************************/
-
 		ENd
 	end try
 
@@ -625,8 +615,6 @@ END
 
   exec CompararBDD 'comparar1','comparar2';
 
- 
-
 
 
 --se muestran los nombres de los esquemas de la bdd1
@@ -653,7 +641,7 @@ select * from tablas_bdd2
 
 
 --se muestra la cantidad de campos que posee cada tabla con el mismo nombre en ambas bdd
-select * from cant_campos
+select * from cant_campos 
 
 --se muestra el tipo de dato, pocicion y si acepta null, de cada columna de las tablas con mismo nombre de ambas bdd
 select * from datos_de_tablas_con_mismo_nombre
@@ -684,3 +672,9 @@ from campos_check
 --se muestran los campos identity de cada bdd
 select * 
 from campos_identity
+
+
+
+--prueba logRrrores
+select * 
+from LOGERRORES
