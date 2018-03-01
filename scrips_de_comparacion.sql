@@ -257,19 +257,19 @@ set nocount on
 					declare @sqlDinamico_cant_tablas2 nvarchar(max)
 				
 
-					set @cant_tablas_bdd1='select @aux_cant_tablas=count(object_id) 
+					set @sqlDinamico_cant_tablas='select @aux_cant_tablas=count(object_id) 
 											from '+@bdd1+'.sys.tables'
 
 					
 
 					
-					set @cant_tablas_bdd2='select @aux_cant_tablas2=count(object_id) 
+					set @sqlDinamico_cant_tablas2='select @aux_cant_tablas2=count(object_id) 
 											from '+@bdd2+'.sys.tables'
 
 					
-					exec sp_executesql @cant_tablas_bdd1,N'@aux_cant_tablas nvarchar(max) OUTPUT',@aux_cant_tablas=@cant_tablas_bdd1 output;
+					exec sp_executesql @sqlDinamico_cant_tablas,N'@aux_cant_tablas nvarchar(max) OUTPUT',@aux_cant_tablas=@cant_tablas_bdd1 output;
 					
-					exec sp_executesql @cant_tablas_bdd2,N'@aux_cant_tablas2 nvarchar(max) OUTPUT',@aux_cant_tablas2=@cant_tablas_bdd2 output;
+					exec sp_executesql @sqlDinamico_cant_tablas2,N'@aux_cant_tablas2 nvarchar(max) OUTPUT',@aux_cant_tablas2=@cant_tablas_bdd2 output;
 					
 
 					begin
